@@ -68,6 +68,8 @@ jobs:
         cd output
         bash ../../package_docker.sh
         mv docker.tar.xz ../../module/docker.tar.xz
+        cd ..
+        rm -rf termux-packages
     
     - name: Update module.prop
       run: |
@@ -129,4 +131,5 @@ jobs:
           ./dist/Magisk-Dockerd-${{ env.version }}.zip
         name: ${{ env.version }}
         tag_name: ${{ env.version }}
+        draft: true
 

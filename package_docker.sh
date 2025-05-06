@@ -15,6 +15,7 @@ PACKAGES=(
     "libdevmapper"
     "docker"
     "resolv-conf"
+    "ncurses"
 )
 
 dir=$(pwd)

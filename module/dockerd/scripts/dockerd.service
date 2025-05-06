@@ -36,7 +36,6 @@ start_dockerd() {
     log Info "✔ dockerd service running with PID : ( $PID )."
     return
   fi
-  fix_bridge
   set_gateway_ip wlan0
   if [ $? -ne 0 ]; then
     log Error "✘ Failed to set up gateway for wlan0."
@@ -46,6 +45,8 @@ start_dockerd() {
   PID=$!
   echo -n $PID > "${dockerd_pid}"
   log Info "✔ dockerd service running with PID : ( $PID )."
+  sleep 5
+  fix_bridge
 }
 
 stop_dockerd(){
