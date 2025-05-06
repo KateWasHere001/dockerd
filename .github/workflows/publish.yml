@@ -28,7 +28,7 @@ jobs:
     - name: Checkout Termux Code
       uses: actions/checkout@v4
       with:
-        repository: divyam234/termux-packages
+        repository: mgksu/termux-packages
         fetch-depth: 1
         path: termux-packages
     
