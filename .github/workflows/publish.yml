@@ -1,13 +1,20 @@
 name: Build Docker for Android
 
 on:
-  push:
-    tags:
-      - "*"
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force build'
+        required: false
+        type: boolean
+        default: false
+
+  schedule:
+    - cron: '0 0 * * 0'
   
 permissions:
   contents: write
+  actions: write
   
 jobs:
   build:
@@ -15,39 +22,99 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+    - name: Fetch tags
+      run: git fetch --prune --unshallow --tags
 
     - name: Checkout Termux Code
       uses: actions/checkout@v4
       with:
-        repository: termux/termux-packages
+        repository: divyam234/termux-packages
         fetch-depth: 1
         path: termux-packages
+    
+    - name: Get latest stable release from docker
+      id: get_stable_release
+      uses: octokit/request-action@v2.x
+      with:
+        route: GET /repos/moby/moby/releases/latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Get latest tag
+      run: |
+        latestTag="${{ fromJSON(steps.get_stable_release.outputs.data).tag_name }}"
+        echo "Latest tag: $latestTag"
+        echo "DOCKER_VERSION=${latestTag}" >> $GITHUB_ENV
+    
+    - name: Check Latest Version
+      if: ${{ inputs.force == false }}
+      run: |
+        LATEST_VERSION=$(git describe --tags --abbrev=0 --always)
+        if [ "$LATEST_VERSION" == "${{ env.DOCKER_VERSION }}" ]; then
+          gh run cancel ${{ github.run_id }}
+        else
+          echo "New version found: ${LATEST_VERSION}"
+        fi
+      env:
+       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Build Docker
       run: |
         cd termux-packages
-        sed -i 's/TERMUX_PKG_VERSION=1:/TERMUX_PKG_VERSION=/' ./root-packages/docker/build.sh
-        sed -i 's/${TERMUX_PKG_VERSION:2}/${TERMUX_PKG_VERSION}/g' ./root-packages/docker/build.sh
-        patch -p1 < $GITHUB_WORKSPACE/patches/docker.patch
-        cp $GITHUB_WORKSPACE/patches/cgroup.go.patch root-packages/docker/cgroup.go.patch
-        cp $GITHUB_WORKSPACE/patches/cgroups2.disable.patch root-packages/runc/cgroups2.disable.patch
-        ./scripts/run-docker.sh ./build-package.sh -i --format pacman docker docker-compose
+        patch -p1 < ../patches/docker.patch
+        version="${{ env.DOCKER_VERSION }}"
+        sed -i "s|^TERMUX_PKG_VERSION=.*|TERMUX_PKG_VERSION=${version#v}|" root-packages/docker/build.sh
+        ./scripts/run-docker.sh ./build-package.sh -i --format pacman docker docker-compose docker-buildx
         cd output
-        bash $GITHUB_WORKSPACE/package_docker.sh
-        mv docker.tar.xz $GITHUB_WORKSPACE/module/docker.tar.xz
+        bash ../../package_docker.sh
+        mv docker.tar.xz ../../module/docker.tar.xz
     
     - name: Update module.prop
       run: |
-        TAG="${{ github.ref_name }}"
-        VERSION=${TAG#v}
-        sed -i "s/^version=.*/version=${VERSION}/" $GITHUB_WORKSPACE/module/module.prop
+          cd module
+          version="${{ env.DOCKER_VERSION }}"
+          version_code=$(echo "${version}" | sed 's/[^0-9]//g')
+          echo "version=${version}" >> $GITHUB_ENV
+          echo "versionCode=${version_code}" >> $GITHUB_ENV
+          echo version=${version}
+          echo versionCode=${version_code}
+          
+          echo "id=dockerd" > module.prop
+          echo "name=Dockerd" >> module.prop
+          echo "version=${version#v}" >> module.prop
+          echo "versionCode=${version_code}" >> module.prop
+          echo "author=repotitan" >> module.prop
+          echo "description=Docker For Android" >> module.prop
+          echo "updateJson=https://raw.githubusercontent.com/${{ github.repository }}/refs/heads/main/update.json" >> module.prop
+    
 
     - name: Create Module
       run: |
-        cd module
-        zip -9 -r "$GITHUB_WORKSPACE/Magisk-Dockerd-${{ github.ref_name }}.zip" ./
+        mkdir -p dist
+        cd module && zip -9 -r ../dist/Magisk-Dockerd-${{ env.version }}.zip ./
+    
+    - name: Set up Git
+      run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+    - name: Push updated files to Main branch
+      run: |
+          echo '{
+            "version": "${{ env.version }}",
+            "versionCode": "${{ env.versionCode }}",
+            "zipUrl": "https://github.com/${{ github.repository }}/releases/download/${{ env.version }}/Magisk-Dockerd-${{ env.version }}.zip",
+            "changelog": "https://raw.githubusercontent.com/${{ github.repository }}/main/CHANGELOG.md"
+          }' > update.json
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Release ${{ env.version }}"
+            git push origin HEAD:main --force
+            git tag ${{ env.version }}
+            git push origin ${{ env.version }} -f
+          fi
 
     - name: Create Release
       id: create_release
@@ -57,9 +124,9 @@ jobs:
       with:
         append_body: true
         generate_release_notes: true
-        make_latest: ${{ github.ref_name }} !=  main
+        make_latest: true
         files: |
-          ./Magisk-Dockerd-${{ github.ref_name }}.zip
-        name: ${{ github.ref_name }}
-        tag_name: ${{ github.ref_name }}
+          ./dist/Magisk-Dockerd-${{ env.version }}.zip
+        name: ${{ env.version }}
+        tag_name: ${{ env.version }}
 
