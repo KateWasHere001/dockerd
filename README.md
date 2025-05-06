@@ -25,8 +25,7 @@ After installation, the Docker daemon (`dockerd`) will run automatically on boot
 
 ```sh
 export PATH=/data/adb/docker/bin:$PATH
-export DOCKER_HOST="unix:///data/adb/docker/var/run/docker.sock"
-export LD_LIBRARY_PATH="/data/adb/docker/lib:$LD_LIBRARY_PATH"
+export DOCKER_HOST="unix:///data/adb/docker/run/docker.sock"
 ```
 You can add above lines to your shell profile (e.g., `~/.bashrc`, `~/.zshrc`) to set the environment variables automatically.
 
