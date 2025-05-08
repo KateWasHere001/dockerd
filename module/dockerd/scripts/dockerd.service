@@ -65,7 +65,7 @@ start_dockerd() {
     log Info "✔ dockerd service running with PID : ( $PID )."
     return
   fi
-  set_gateway_ip wlan0
+  set_gateway_ip wlan0 >/dev/null 2>&1
   if [ $? -ne 0 ]; then
     log Error "✘ Failed to set up gateway for wlan0."
   fi
@@ -75,7 +75,7 @@ start_dockerd() {
 
   # Remove any existing pid files
   rm -f "${dockerd_run_dir}/docker.pid" "${dockerd_run_dir}/docker/containerd/containerd.pid"
-  
+
   nohup ${dockerd_bin} > "${dockerd_log}" 2>&1 &
   PID=$!
   echo -n $PID > "${dockerd_pid}"
