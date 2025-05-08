@@ -18,10 +18,12 @@ if [ "$check" -eq 1 ]; then
   opts='rw,nosuid,nodev,noexec,relatime'
   cgroups='blkio cpu cpuacct cpuset devices freezer memory pids schedtune'
 
-  if [ "$(stat -fc %T /sys/fs/cgroup)" = "cgroup2fs" ]; then
-     mount -t tmpfs -o "${opts}" cgroup /sys/fs/cgroup || return
+  cgroup_fs=$(stat -fc %T /sys/fs/cgroup)
+  if [ "$cgroup_fs" = "cgroup2fs" ]; then
+    log Info "Mounting cgroups v1"
+    mount -t tmpfs -o "${opts}" cgroup /sys/fs/cgroup || return
   fi
- 
+
   for cg in ${cgroups}; do
     if ! mountpoint -q "/sys/fs/cgroup/${cg}" 2>/dev/null; then
       mkdir -p "/sys/fs/cgroup/${cg}"
