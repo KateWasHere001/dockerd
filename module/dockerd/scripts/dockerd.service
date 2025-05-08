@@ -18,8 +18,10 @@ if [ "$check" -eq 1 ]; then
   opts='rw,nosuid,nodev,noexec,relatime'
   cgroups='blkio cpu cpuacct cpuset devices freezer memory pids schedtune'
 
-  mount -t tmpfs -o "${opts}" cgroup /sys/fs/cgroup || return 1
-
+  if [ "$(stat -fc %T /sys/fs/cgroup)" = "cgroup2fs" ]; then
+     mount -t tmpfs -o "${opts}" cgroup /sys/fs/cgroup || return
+  fi
+ 
   for cg in ${cgroups}; do
     if ! mountpoint -q "/sys/fs/cgroup/${cg}" 2>/dev/null; then
       mkdir -p "/sys/fs/cgroup/${cg}"
@@ -70,14 +72,17 @@ start_dockerd() {
 
   # mount cgroups v1 on kernel version < 4.14 as cgroup namespaces are supported above 4.6
   mount_v1_cgroups
-  # The logs time cannot set to current timezone, default is UTC.
+
+  # Remove any existing pid files
+  rm -f "${dockerd_run_dir}/docker.pid" "${dockerd_run_dir}/docker/containerd/containerd.pid"
+  
   nohup ${dockerd_bin} > "${dockerd_log}" 2>&1 &
   PID=$!
   echo -n $PID > "${dockerd_pid}"
   log Info "✔ dockerd service running with PID : ( $PID )."
   sleep 3
   log Info "Fixing bridge..."
-  fix_bridge
+  fix_bridge >/dev/null 2>&1
 }
 
 stop_dockerd(){
