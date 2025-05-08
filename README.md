@@ -20,8 +20,8 @@ After installation, the Docker daemon (`dockerd`) will run automatically on boot
 
 ## Available command
 
-- `docker`: This command is executes docker operation.
-- `dockerd.service`: This command for managing dockerd service, you can start,stop,restart daemon and view live logs the dockerd operation.
+- `docker`: This executes docker operation.
+- `dockerd.service`: Used for managing dockerd service, you can start,stop,restart daemon and view live logs the dockerd operation.
 
 ```sh
 export PATH=/data/adb/docker/bin:$PATH
@@ -38,6 +38,6 @@ You can add above lines to your shell profile (e.g., `~/.bashrc`, `~/.zshrc`) to
 
 You can explore to the issue tab, if there not exists, you can open issue, for help me resolve the problem, you can include fresh log.
 
-1. Restart tailscaled with `dockerd.service restart`
+1. Restart dockerd with `dockerd.service restart`
 2. Reproduce what are you doing which has problem.
-3. Get log at `dockerd.service log run`
+3. Get log at `dockerd.service log runs` and `dockerd.service log dockerd` 
