@@ -46,21 +46,21 @@ jobs:
     
     - name: Get latest tag
       run: |
-        latestTag="${{ fromJSON(steps.get_stable_release.outputs.data).tag_name }}"
+        #latestTag="${{ fromJSON(steps.get_stable_release.outputs.data).tag_name }}"
+        if [ ${{ inputs.android_version }} == "latest" ]; then
+          latestTag="${{ fromJSON(steps.get_stable_release.outputs.data).tag_name }}"
+          echo "build latest version."
+        else
+          latestTag="${{ inputs.android_version }}"
+          echo "build ${{ inputs.android_version }} version."
+        fi
         echo "Latest tag: $latestTag"
         echo "DOCKER_VERSION=${latestTag}" >> $GITHUB_ENV
     
     - name: Check Latest Version
       if: ${{ inputs.force == false }}
       run: |
-        if [ ${{ inputs.android_version }} == "latest" ]; then
-          LATEST_VERSION=$(git describe --tags --abbrev=0 --always)
-          echo "build latest version."
-        else
-          LATEST_VERSION="${{ inputs.android_version }}"
-          echo "build ${{ inputs.android_version }} version."
-        fi
-        
+        LATEST_VERSION=$(git describe --tags --abbrev=0 --always)
         if [ "$LATEST_VERSION" == "${{ env.DOCKER_VERSION }}" ]; then
           gh run cancel ${{ github.run_id }}
         else
