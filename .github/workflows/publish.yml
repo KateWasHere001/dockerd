@@ -49,7 +49,8 @@ jobs:
     - name: Check Latest Version
       if: ${{ inputs.force == false }}
       run: |
-        LATEST_VERSION=$(git describe --tags --abbrev=0 --always)
+        #LATEST_VERSION=$(git describe --tags --abbrev=0 --always)
+        LATEST_VERSION=v25.0.12
         if [ "$LATEST_VERSION" == "${{ env.DOCKER_VERSION }}" ]; then
           gh run cancel ${{ github.run_id }}
         else
