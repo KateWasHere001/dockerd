@@ -50,7 +50,7 @@ jobs:
       if: ${{ inputs.force == false }}
       run: |
         #LATEST_VERSION=$(git describe --tags --abbrev=0 --always)
-        LATEST_VERSION=v25.0.12
+        LATEST_VERSION=v27.5.1
         if [ "$LATEST_VERSION" == "${{ env.DOCKER_VERSION }}" ]; then
           gh run cancel ${{ github.run_id }}
         else
