@@ -47,12 +47,12 @@ jobs:
     - name: Get latest tag
       run: |
         #latestTag="${{ fromJSON(steps.get_stable_release.outputs.data).tag_name }}"
-        if [ ${{ inputs.android_version }} == "latest" ]; then
+        if [ "${{ inputs.build_version }}" == "latest" ]; then
           latestTag="${{ fromJSON(steps.get_stable_release.outputs.data).tag_name }}"
           echo "build latest version."
         else
-          latestTag="${{ inputs.android_version }}"
-          echo "build ${{ inputs.android_version }} version."
+          latestTag="${{ inputs.build_version }}"
+          echo "build ${{ inputs.build_version }} version."
         fi
         echo "Latest tag: $latestTag"
         echo "DOCKER_VERSION=${latestTag}" >> $GITHUB_ENV
