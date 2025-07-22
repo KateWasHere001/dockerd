@@ -3,6 +3,10 @@ name: Build Docker for Android
 on:
   workflow_dispatch:
     inputs:
+      build_version:
+        required: false
+        type: string
+        default: "latest"
       force:
         description: 'Force build'
         required: false
@@ -49,8 +53,14 @@ jobs:
     - name: Check Latest Version
       if: ${{ inputs.force == false }}
       run: |
-        #LATEST_VERSION=$(git describe --tags --abbrev=0 --always)
-        LATEST_VERSION=v26.1.5
+        if [ ${{ inputs.android_version }} == "latest" ]; then
+          LATEST_VERSION=$(git describe --tags --abbrev=0 --always)
+          echo "build latest version."
+        else
+          LATEST_VERSION="${{ inputs.android_version }}"
+          echo "build ${{ inputs.android_version }} version."
+        fi
+        
         if [ "$LATEST_VERSION" == "${{ env.DOCKER_VERSION }}" ]; then
           gh run cancel ${{ github.run_id }}
         else
