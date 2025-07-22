@@ -112,6 +112,8 @@ jobs:
           git config --global user.email "github-actions@github.com"
 
     - name: Push updated files to Main branch
+      env:
+        GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
       run: |
           echo '{
             "version": "${{ env.version }}",
